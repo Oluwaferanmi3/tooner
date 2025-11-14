@@ -53,6 +53,16 @@ export interface DecodeOptions {
    * Enable strict validation during decoding
    */
   strict?: boolean;
+  /**
+   * Indentation size (default: 2)
+   */
+  indent?: number;
+  /**
+   * Path expansion mode (default: 'off')
+   * - 'off': Keep dotted keys literal
+   * - 'safe': Expand identifier-only dotted keys
+   */
+  expandPaths?: 'off' | 'safe';
 }
 
 /**

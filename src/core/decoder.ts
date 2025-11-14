@@ -3,34 +3,232 @@ import { ToonDecodeError } from './types.js';
 import { parseString, parseKey } from '../utils/string.js';
 
 /**
+ * Validate indentation in strict mode
+ */
+function validateIndentation(lines: string[], indent: number): void {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Skip empty lines
+    if (line.trim() === '') continue;
+    
+    // Check for tabs in indentation
+    const leadingWhitespace = line.match(/^(\s*)/)?.[1] || '';
+    if (leadingWhitespace.includes('\t')) {
+      throw new ToonDecodeError(
+        'Tab characters not allowed in indentation in strict mode',
+        i + 1
+      );
+    }
+    
+    // Check if indentation is multiple of indent size
+    const indentLevel = leadingWhitespace.length;
+    if (indentLevel > 0 && indentLevel % indent !== 0) {
+      throw new ToonDecodeError(
+        `Invalid indentation: expected multiple of ${indent}, got ${indentLevel}`,
+        i + 1
+      );
+    }
+  }
+}
+
+/**
+ * Check if key should be expanded
+ * - Must have expandPaths='safe'
+ * - Must contain dots
+ * - Must not have been originally quoted
+ * - All parts must be valid identifiers (no hyphens, etc.)
+ */
+function shouldExpandKey(
+  key: string,
+  wasQuoted: boolean,
+  options: DecodeOptions
+): boolean {
+  if (options.expandPaths !== 'safe') return false;
+  if (wasQuoted) return false;
+  if (!key.includes('.')) return false;
+  
+  // Check all parts are valid identifiers (alphanumeric + underscore)
+  const parts = key.split('.');
+  return parts.every(part => /^[a-zA-Z_]\w*$/.test(part));
+}
+
+/**
+ * Expand dotted keys to nested objects
+ * metadata contains wasQuoted info for each key
+ */
+function expandPaths(
+  obj: Record<string, ToonValue>,
+  metadata: Map<string, boolean>,
+  options: DecodeOptions
+): Record<string, ToonValue> {
+  const result: Record<string, ToonValue> = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    const wasQuoted = metadata.get(key) ?? false;
+    if (shouldExpandKey(key, wasQuoted, options)) {
+      // Expand dotted key
+      const parts = key.split('.');
+      setNestedValue(result, parts, value, options);
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Set nested value with conflict detection
+ */
+function setNestedValue(
+  obj: Record<string, ToonValue>,
+  parts: string[],
+  value: ToonValue,
+  options: DecodeOptions
+): void {
+  if (parts.length === 0) return;
+  
+  if (parts.length === 1) {
+    const key = parts[0];
+    const existing = obj[key];
+    
+    // Check for conflicts
+    if (existing !== undefined) {
+      const existingType = Array.isArray(existing) ? 'array' :
+                          typeof existing === 'object' && existing !== null ?
+                          'object' : 'primitive';
+      const newType = Array.isArray(value) ? 'array' :
+                     typeof value === 'object' && value !== null ?
+                     'object' : 'primitive';
+      
+      if (existingType !== newType) {
+        if (options.strict) {
+          throw new ToonDecodeError(
+            `Path expansion conflict: cannot merge ${newType} with ${existingType}`,
+            0
+          );
+        }
+        // LWW: overwrite
+        obj[key] = value;
+        return;
+      }
+      
+      // Deep merge objects
+      if (existingType === 'object' && newType === 'object' &&
+          !Array.isArray(existing) && !Array.isArray(value)) {
+        obj[key] = {
+          ...(existing as Record<string, ToonValue>),
+          ...(value as Record<string, ToonValue>),
+        };
+        return;
+      }
+    }
+    
+    obj[key] = value;
+    return;
+  }
+  
+  const first = parts[0];
+  const rest = parts.slice(1);
+  
+  if (obj[first] === undefined) {
+    obj[first] = {};
+  } else if (typeof obj[first] !== 'object' || Array.isArray(obj[first])) {
+    // Conflict detected
+    if (options.strict) {
+      throw new ToonDecodeError(
+        'Path expansion conflict: cannot create nested object',
+        0
+      );
+    }
+    // LWW: overwrite with object
+    obj[first] = {};
+  }
+  
+  setNestedValue(
+    obj[first] as Record<string, ToonValue>,
+    rest,
+    value,
+    options
+  );
+}
+
+/**
  * Decode TOON format to value
  */
 export function decode(toon: string, options: DecodeOptions = {}): ToonValue {
+  // Section: Normalize options
+  const opts: DecodeOptions = {
+    strict: options.strict ?? false,
+    indent: options.indent ?? 2,
+    expandPaths: options.expandPaths ?? 'off',
+  };
+
   // Section: Handle empty document
   if (toon.trim() === '') return {};
 
   const lines = toon.split('\n');
   
+  // Section: Validate indentation in strict mode
+  if (opts.strict) {
+    validateIndentation(lines, opts.indent!);
+  }
+
   // Section: Check for root-level primitive (single non-empty line)
   const nonEmptyLines = lines.filter(l => l.trim() !== '');
-  if (nonEmptyLines.length === 1 && !nonEmptyLines[0].includes(':')) {
-    return parsePrimitive(nonEmptyLines[0]);
+  if (nonEmptyLines.length === 1) {
+    const line = nonEmptyLines[0].trim();
+    // Check if it's a complete quoted string (primitive)
+    if (line.startsWith('"') && line.endsWith('"') && line.length > 1) {
+      // Make sure it's not a key-value like "key": value
+      const keyResult = parseKey(line);
+      if (!keyResult || !keyResult.rest.trim().startsWith(':')) {
+        return parsePrimitive(nonEmptyLines[0], 0);
+      }
+    }
+    // If doesn't contain colon, it's a primitive
+    if (!line.includes(':')) {
+      return parsePrimitive(nonEmptyLines[0], 0);
+    }
+  }
+
+  // Section: Check for multiple primitives at root in strict mode
+  if (opts.strict && nonEmptyLines.length > 1) {
+    const allPrimitives = nonEmptyLines.every(
+      line => !line.includes(':') && !line.startsWith('[')
+    );
+    if (allPrimitives) {
+      throw new ToonDecodeError(
+        'Multiple primitives at root not allowed in strict mode',
+        1
+      );
+    }
   }
 
   // Section: Check for root array (starts with [)
   const firstLine = nonEmptyLines[0];
   if (firstLine.trim().startsWith('[')) {
-    const parsed = parseRootArray(firstLine.trim(), lines, 0, options);
+    const parsed = parseRootArray(firstLine.trim(), lines, 0, opts);
     return parsed.value;
   }
 
-  const result = parseLines(lines, 0, options);
+  const result = parseLines(lines, 0, opts);
+  
+  // Section: Apply path expansion if enabled
+  if (opts.expandPaths === 'safe' && typeof result.value === 'object' &&
+      result.value !== null && !Array.isArray(result.value)) {
+    const metadata = result.keyMetadata || new Map();
+    return expandPaths(result.value as Record<string, ToonValue>, metadata, opts);
+  }
+  
   return result.value;
 }
 
 interface ParseResult {
   value: ToonValue;
   linesConsumed: number;
+  keyMetadata?: Map<string, boolean>;
 }
 
 interface ParseContext {
@@ -41,12 +239,15 @@ interface ParseContext {
 /**
  * Parse primitive value from string
  */
-function parsePrimitive(str: string): ToonValue {
+function parsePrimitive(str: string, lineIndex: number): ToonValue {
   const trimmed = str.trim();
 
   // Section: Handle quoted strings
-  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    return parseString(trimmed);
+  if (trimmed.startsWith('"')) {
+    if (!trimmed.endsWith('"') || trimmed.length < 2) {
+      throw new ToonDecodeError('Unterminated string', lineIndex + 1);
+    }
+    return parseString(trimmed, lineIndex);
   }
 
   // Section: Handle keywords
@@ -62,7 +263,9 @@ function parsePrimitive(str: string): ToonValue {
       // Leading zero - treat as string
       return trimmed;
     }
-    return Number(trimmed);
+    const num = Number(trimmed);
+    // Normalize negative zero to positive zero
+    return Object.is(num, -0) ? 0 : num;
   }
 
   // Section: Unquoted string
@@ -135,7 +338,7 @@ function parseInlineArray(
   }
 
   // Parse each value as primitive
-  const parsed = values.map((v) => parsePrimitive(v));
+  const parsed = values.map((v) => parsePrimitive(v, lineIndex));
 
   return { key, values: parsed, delimiter };
 }
@@ -255,7 +458,7 @@ function parseTabular(
 
     const obj: Record<string, ToonValue> = {};
     for (let j = 0; j < keys.length; j++) {
-      obj[keys[j]] = parsePrimitive(values[j]);
+      obj[keys[j]] = parsePrimitive(values[j], lineIndex);
     }
     result.push(obj);
 
@@ -319,7 +522,7 @@ function parseRootArray(
     }
 
     return {
-      value: values.map((v) => parsePrimitive(v)),
+      value: values.map((v) => parsePrimitive(v, startIndex)),
       linesConsumed: 1,
     };
   }
@@ -360,7 +563,7 @@ function parseRootArray(
 
       const obj: Record<string, ToonValue> = {};
       for (let j = 0; j < keys.length; j++) {
-        obj[keys[j]] = parsePrimitive(values[j]);
+        obj[keys[j]] = parsePrimitive(values[j], lineIndex);
       }
       result.push(obj);
 
@@ -429,7 +632,7 @@ function parseRootArray(
       const indent = getIndentLevel(line);
       if (indent < baseIndent) break;
 
-      const value = parsePrimitive(line);
+      const value = parsePrimitive(line, lineIndex);
       result.push(value);
       lineIndex++;
     }
@@ -546,7 +749,7 @@ function parseListFormat(
                 lineIndex = nestedStart + nested.linesConsumed;
               } else {
                 // First field has inline value
-                obj[key] = parsePrimitive(valueStr);
+                obj[key] = parsePrimitive(valueStr, lineIndex);
                 lineIndex++;
               }
             } else {
@@ -619,7 +822,7 @@ function parseListFormat(
             obj[nextKey] = nested.value;
             lineIndex = nestedStart + nested.linesConsumed;
           } else {
-            obj[nextKey] = parsePrimitive(nextValueStr);
+            obj[nextKey] = parsePrimitive(nextValueStr, lineIndex);
             lineIndex++;
           }
         }
@@ -629,7 +832,7 @@ function parseListFormat(
       }
 
       // Section: Handle primitive value
-      result.push(parsePrimitive(itemContent));
+      result.push(parsePrimitive(itemContent, lineIndex));
       lineIndex++;
       continue;
     }
@@ -727,7 +930,7 @@ function parseArray(
     const indent = getIndentLevel(line);
     if (indent < baseIndent) break;
 
-    const value = parsePrimitive(line);
+    const value = parsePrimitive(line, lineIndex);
     result.push(value);
     lineIndex++;
   }
@@ -748,6 +951,7 @@ function parseLines(
 ): ParseResult {
   let lineIndex = startIndex;
   const result: Record<string, ToonValue> = {};
+  const keyMetadata = new Map<string, boolean>();
 
   // Section: Find base indentation
   let baseIndent = -1;
@@ -787,18 +991,23 @@ function parseLines(
     const content = line.trim();
 
     // Section: Handle inline arrays (with values after colon)
-    if (content.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*\S+/)) {
+    if (content.match(/^("([^"\\]|\\.)*"|[\w.-]+)\[[^\]]+\]:\s*\S+/)) {
       const parsed = parseInlineArray(content, lineIndex);
+      const keyResult = parseKey(content);
+      if (keyResult) {
+        keyMetadata.set(parsed.key, keyResult.wasQuoted ?? false);
+      }
       result[parsed.key] = parsed.values;
       lineIndex++;
       continue;
     }
 
     // Section: Handle tabular arrays
-    if (content.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]\{[^}]+\}:\s*$/)) {
+    if (content.match(/^("([^"\\]|\\.)*"|[\w.-]+)\[[^\]]+\]\{[^}]+\}:\s*$/)) {
       const parsed = parseTabular(content, lines, lineIndex, options);
       const keyResult = parseKey(content);
       if (keyResult) {
+        keyMetadata.set(keyResult.key, keyResult.wasQuoted ?? false);
         result[keyResult.key] = parsed.value;
       }
       lineIndex += parsed.linesConsumed;
@@ -806,10 +1015,11 @@ function parseLines(
     }
 
     // Section: Handle arrays (multiline)
-    if (content.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*$/)) {
+    if (content.match(/^("([^"\\]|\\.)*"|[\w.-]+)\[[^\]]+\]:\s*$/)) {
       const parsed = parseArray(content, lines, lineIndex, options);
       const keyResult = parseKey(content);
       if (keyResult) {
+        keyMetadata.set(keyResult.key, keyResult.wasQuoted ?? false);
         result[keyResult.key] = parsed.value;
       }
       lineIndex += parsed.linesConsumed;
@@ -827,27 +1037,40 @@ function parseLines(
       const { key, rest } = keyResult;
       const colonMatch = rest.match(/^:\s*(.*)$/);
       if (!colonMatch) {
-        lineIndex++;
-        continue;
+        throw new ToonDecodeError(
+          'Missing colon in key-value context',
+          lineIndex + 1
+        );
       }
 
       const valueStr = colonMatch[1].trim();
 
+      // Track if key was quoted
+      keyMetadata.set(key, keyResult.wasQuoted ?? false);
+
       if (valueStr === '') {
-        // Nested object
+        // Nested object or empty object
         const nestedStart = lineIndex + 1;
         const nested = parseLines(lines, nestedStart, options);
-        result[key] = nested.value;
+        // If nested returned null, it's an empty object
+        result[key] = nested.value === null ? {} : nested.value;
         lineIndex = nestedStart + nested.linesConsumed;
       } else {
         // Primitive value
-        result[key] = parsePrimitive(valueStr);
+        result[key] = parsePrimitive(valueStr, lineIndex);
         lineIndex++;
       }
       continue;
     }
 
-    // Standalone value (shouldn't happen in well-formed TOON)
+    // Standalone value - error in strict nested context
+    if (options.strict && lineIndex > startIndex) {
+      throw new ToonDecodeError(
+        'Missing colon in key-value context',
+        lineIndex + 1
+      );
+    }
+    
     lineIndex++;
   }
 
@@ -857,5 +1080,9 @@ function parseLines(
     return { value: null, linesConsumed: lineIndex - startIndex };
   }
 
-  return { value: result, linesConsumed: lineIndex - startIndex };
+  return {
+    value: result,
+    linesConsumed: lineIndex - startIndex,
+    keyMetadata,
+  };
 }

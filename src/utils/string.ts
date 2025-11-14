@@ -114,15 +114,50 @@ export function escapeString(str: string): string {
 }
 
 /**
- * Unescape TOON string
+ * Unescape TOON string with validation
  */
-export function unescapeString(str: string): string {
-  return str
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, '\\');
+export function unescapeString(str: string, lineIndex?: number): string {
+  let result = '';
+  let i = 0;
+  
+  while (i < str.length) {
+    if (str[i] === '\\' && i + 1 < str.length) {
+      const next = str[i + 1];
+      if (next === 'n') {
+        result += '\n';
+        i += 2;
+      } else if (next === 'r') {
+        result += '\r';
+        i += 2;
+      } else if (next === 't') {
+        result += '\t';
+        i += 2;
+      } else if (next === '"') {
+        result += '"';
+        i += 2;
+      } else if (next === '\\') {
+        result += '\\';
+        i += 2;
+      } else {
+        // Invalid escape sequence
+        if (lineIndex !== undefined) {
+          const { ToonDecodeError } = require('../core/types.js');
+          throw new ToonDecodeError(
+            `Invalid escape sequence: \\${next}`,
+            lineIndex + 1
+          );
+        }
+        // Fallback: keep as is
+        result += str[i];
+        i++;
+      }
+    } else {
+      result += str[i];
+      i++;
+    }
+  }
+  
+  return result;
 }
 
 /**
@@ -155,13 +190,13 @@ export function quoteKey(key: string): string {
 /**
  * Parse quoted or unquoted string from TOON
  */
-export function parseString(str: string): string {
+export function parseString(str: string, lineIndex?: number): string {
   const trimmed = str.trim();
 
   // Check if quoted
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
     const content = trimmed.slice(1, -1);
-    return unescapeString(content);
+    return unescapeString(content, lineIndex);
   }
 
   return trimmed;
@@ -169,11 +204,11 @@ export function parseString(str: string): string {
 
 /**
  * Parse key (handles both quoted and unquoted keys)
- * Returns the key string and the remaining text after the key
+ * Returns the key string, remaining text, and whether it was quoted
  */
 export function parseKey(
   str: string
-): { key: string; rest: string } | null {
+): { key: string; rest: string; wasQuoted?: boolean } | null {
   const trimmed = str.trim();
 
   // Section: Handle quoted keys
@@ -186,7 +221,8 @@ export function parseKey(
       const char = trimmed[i];
 
       if (escaped) {
-        key += char;
+        // Keep the backslash for unescapeString to process
+        key += '\\' + char;
         escaped = false;
         i++;
         continue;
@@ -201,8 +237,9 @@ export function parseKey(
       if (char === '"') {
         // Found closing quote
         return {
-          key: unescapeString(key),
+          key: unescapeString(key, 0),
           rest: trimmed.slice(i + 1),
+          wasQuoted: true,
         };
       }
 
@@ -214,12 +251,14 @@ export function parseKey(
     return null;
   }
 
-  // Section: Handle unquoted keys (word characters only)
-  const match = trimmed.match(/^(\w+)(.*)$/);
-  if (match) {
+  // Section: Handle unquoted keys
+  // Match word chars, dots, and hyphens, but stop at brackets or colon
+  const match = trimmed.match(/^([\w.-]+?)(\[.*|:\s*.*|$)/);
+  if (match && match[1]) {
     return {
       key: match[1],
       rest: match[2],
+      wasQuoted: false,
     };
   }
 

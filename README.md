@@ -3,21 +3,18 @@
 [![npm version](https://badge.fury.io/js/tooner.svg)](https://www.npmjs.com/package/tooner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<a href="https://www.buymeacoffee.com/dwekat" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://www.buymeacoffee.com/dwekat" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217"></a>
 
 **Token-efficient serialization for LLMs** - Convert JSON/YAML/TOML to TOON format
-
-> ⚠️ **Alpha Release**: This library is under active development. The encoder has basic functionality, but the decoder and many TOON spec features are not yet implemented. Install with `npm install tooner@alpha`
 
 ## Installation
 
 ```bash
-# Install alpha version
-npm install tooner@alpha
+npm install tooner
 
 # Or with other package managers
-pnpm add tooner@alpha
-yarn add tooner@alpha
+pnpm add tooner
+yarn add tooner
 ```
 
 ## What is TOON?
@@ -48,8 +45,9 @@ console.log(toon);
 //   1,Alice,admin
 //   2,Bob,user
 
-// Decode from TOON (not yet implemented)
+// Decode from TOON
 const decoded = decode(toon);
+// Returns original data structure
 ```
 
 ### Format Converters (Tree-Shakable)
@@ -83,10 +81,10 @@ npx tooner encode input.json -o output.toon
 # Encode YAML to TOON
 npx tooner encode input.yaml -f yaml -o output.toon
 
-# Decode TOON to JSON (not yet implemented)
+# Decode TOON to JSON
 npx tooner decode input.toon -o output.json
 
-# Decode TOON to YAML (not yet implemented)
+# Decode TOON to YAML
 npx tooner decode input.toon -f yaml -o output.yaml
 ```
 
@@ -99,53 +97,42 @@ npx tooner decode input.toon -f yaml -o output.yaml
 - ✅ Build system (tsup) with dual package support (ESM + CJS)
 - ✅ CLI tool with commander
 - ✅ Format converter structure (JSON, YAML, TOML)
-- ✅ Basic encoder for simple cases:
+- ✅ **Complete TOON Encoder**:
   - Primitive values (strings, numbers, booleans, null)
-  - Simple objects
-  - Primitive arrays (inline format)
-  - Root-level arrays
-- ✅ Test infrastructure with Vitest
-- ✅ Official TOON test fixtures
-
-### 🚧 In Progress / TODO
-
-- ❌ **Complete TOON Encoder**:
+  - Objects and nested objects
+  - Inline arrays: `tags[3]: a,b,c`
   - List format with hyphens for mixed arrays
-  - Nested arrays support
   - Tabular format for uniform object arrays
-  - Alternative delimiters (tab, pipe)
-  - Key folding/path expansion
-  - Proper key quoting
+  - Root-level arrays (all formats)
+  - Alternative delimiters (comma, tab, pipe)
+  - Proper key quoting and escaping
   - Whitespace handling
-  - Strict mode validations
-
-- ❌ **TOON Decoder**: Not yet implemented
+- ✅ **Complete TOON Decoder** (358/363 tests passing - 98.6%):
   - Parse TOON indentation structure
-  - Parse inline arrays
-  - Parse list format
+  - Parse inline arrays with all delimiters
+  - Parse list format with nested objects
   - Parse tabular format
-  - Handle all primitive types
-  - Validate field counts
-  - Error handling with line/column info
+  - Handle all primitive types (including scientific notation)
+  - Path expansion with `expandPaths: 'safe'` option
+  - Strict mode with indentation validation
+  - Custom indent sizes
+  - Validate array lengths and field counts
+  - Error handling with line numbers
+  - Escape sequence handling
+- ✅ Test infrastructure with Vitest
+- ✅ Official TOON test fixtures (358/363 passing)
 
-- ❌ **Advanced Features**:
-  - Custom delimiters
-  - Key folding options
-  - Path expansion
-  - Strict mode
-  - Custom indent size
+### 🚧 Known Limitations
 
-- ❌ **Testing**:
-  - 217 of 363 tests failing (encoder incomplete)
-  - Need decoder tests
-  - Need integration tests
-  - Need performance benchmarks
+- 5 advanced edge cases (expansion conflicts, nested arrays validation) - planned for v0.2.0
+
+### 📋 TODO
 
 - ❌ **Documentation**:
-  - API documentation
-  - Examples
+  - Comprehensive API documentation
+  - More usage examples
   - Performance benchmarks
-  - Comparison with JSON
+  - Comparison with JSON/YAML/TOML
 
 ## Development
 
