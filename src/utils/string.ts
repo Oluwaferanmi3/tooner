@@ -166,3 +166,62 @@ export function parseString(str: string): string {
 
   return trimmed;
 }
+
+/**
+ * Parse key (handles both quoted and unquoted keys)
+ * Returns the key string and the remaining text after the key
+ */
+export function parseKey(
+  str: string
+): { key: string; rest: string } | null {
+  const trimmed = str.trim();
+
+  // Section: Handle quoted keys
+  if (trimmed.startsWith('"')) {
+    let i = 1;
+    let escaped = false;
+    let key = '';
+
+    while (i < trimmed.length) {
+      const char = trimmed[i];
+
+      if (escaped) {
+        key += char;
+        escaped = false;
+        i++;
+        continue;
+      }
+
+      if (char === '\\') {
+        escaped = true;
+        i++;
+        continue;
+      }
+
+      if (char === '"') {
+        // Found closing quote
+        return {
+          key: unescapeString(key),
+          rest: trimmed.slice(i + 1),
+        };
+      }
+
+      key += char;
+      i++;
+    }
+
+    // Unclosed quote
+    return null;
+  }
+
+  // Section: Handle unquoted keys (word characters only)
+  const match = trimmed.match(/^(\w+)(.*)$/);
+  if (match) {
+    return {
+      key: match[1],
+      rest: match[2],
+    };
+  }
+
+  return null;
+}

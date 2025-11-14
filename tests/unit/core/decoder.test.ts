@@ -9,8 +9,12 @@ describe('TOON Decoder - Official Fixtures', () => {
     describe(fixture.description, () => {
       for (const test of fixture.tests) {
         it(test.name, () => {
-          const result = decode(test.input as string);
-          expect(result).toEqual(test.expected);
+          if ((test as any).shouldError) {
+            expect(() => decode(test.input as string, test.options as any)).toThrow();
+          } else {
+            const result = decode(test.input as string, test.options as any);
+            expect(result).toEqual(test.expected);
+          }
         });
       }
     });
