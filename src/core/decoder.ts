@@ -8,10 +8,10 @@ import { parseString, parseKey } from '../utils/string.js';
 function validateIndentation(lines: string[], indent: number): void {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
+
     // Skip empty lines
     if (line.trim() === '') continue;
-    
+
     // Check for tabs in indentation
     const leadingWhitespace = line.match(/^(\s*)/)?.[1] || '';
     if (leadingWhitespace.includes('\t')) {
@@ -20,7 +20,7 @@ function validateIndentation(lines: string[], indent: number): void {
         i + 1
       );
     }
-    
+
     // Check if indentation is multiple of indent size
     const indentLevel = leadingWhitespace.length;
     if (indentLevel > 0 && indentLevel % indent !== 0) {
@@ -47,10 +47,10 @@ function shouldExpandKey(
   if (options.expandPaths !== 'safe') return false;
   if (wasQuoted) return false;
   if (!key.includes('.')) return false;
-  
+
   // Check all parts are valid identifiers (alphanumeric + underscore)
   const parts = key.split('.');
-  return parts.every(part => /^[a-zA-Z_]\w*$/.test(part));
+  return parts.every((part) => /^[a-zA-Z_]\w*$/.test(part));
 }
 
 /**
@@ -63,7 +63,7 @@ function expandPaths(
   options: DecodeOptions
 ): Record<string, ToonValue> {
   const result: Record<string, ToonValue> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const wasQuoted = metadata.get(key) ?? false;
     if (shouldExpandKey(key, wasQuoted, options)) {
@@ -74,7 +74,7 @@ function expandPaths(
       result[key] = value;
     }
   }
-  
+
   return result;
 }
 
@@ -88,20 +88,24 @@ function setNestedValue(
   options: DecodeOptions
 ): void {
   if (parts.length === 0) return;
-  
+
   if (parts.length === 1) {
     const key = parts[0];
     const existing = obj[key];
-    
+
     // Check for conflicts
     if (existing !== undefined) {
-      const existingType = Array.isArray(existing) ? 'array' :
-                          typeof existing === 'object' && existing !== null ?
-                          'object' : 'primitive';
-      const newType = Array.isArray(value) ? 'array' :
-                     typeof value === 'object' && value !== null ?
-                     'object' : 'primitive';
-      
+      const existingType = Array.isArray(existing)
+        ? 'array'
+        : typeof existing === 'object' && existing !== null
+          ? 'object'
+          : 'primitive';
+      const newType = Array.isArray(value)
+        ? 'array'
+        : typeof value === 'object' && value !== null
+          ? 'object'
+          : 'primitive';
+
       if (existingType !== newType) {
         if (options.strict) {
           throw new ToonDecodeError(
@@ -113,10 +117,14 @@ function setNestedValue(
         obj[key] = value;
         return;
       }
-      
+
       // Deep merge objects
-      if (existingType === 'object' && newType === 'object' &&
-          !Array.isArray(existing) && !Array.isArray(value)) {
+      if (
+        existingType === 'object' &&
+        newType === 'object' &&
+        !Array.isArray(existing) &&
+        !Array.isArray(value)
+      ) {
         obj[key] = {
           ...(existing as Record<string, ToonValue>),
           ...(value as Record<string, ToonValue>),
@@ -124,14 +132,14 @@ function setNestedValue(
         return;
       }
     }
-    
+
     obj[key] = value;
     return;
   }
-  
+
   const first = parts[0];
   const rest = parts.slice(1);
-  
+
   if (obj[first] === undefined) {
     obj[first] = {};
   } else if (typeof obj[first] !== 'object' || Array.isArray(obj[first])) {
@@ -145,13 +153,8 @@ function setNestedValue(
     // LWW: overwrite with object
     obj[first] = {};
   }
-  
-  setNestedValue(
-    obj[first] as Record<string, ToonValue>,
-    rest,
-    value,
-    options
-  );
+
+  setNestedValue(obj[first] as Record<string, ToonValue>, rest, value, options);
 }
 
 /**
@@ -169,14 +172,14 @@ export function decode(toon: string, options: DecodeOptions = {}): ToonValue {
   if (toon.trim() === '') return {};
 
   const lines = toon.split('\n');
-  
+
   // Section: Validate indentation in strict mode
   if (opts.strict) {
     validateIndentation(lines, opts.indent!);
   }
 
   // Section: Check for root-level primitive (single non-empty line)
-  const nonEmptyLines = lines.filter(l => l.trim() !== '');
+  const nonEmptyLines = lines.filter((l) => l.trim() !== '');
   if (nonEmptyLines.length === 1) {
     const line = nonEmptyLines[0].trim();
     // Check if it's a complete quoted string (primitive)
@@ -196,7 +199,7 @@ export function decode(toon: string, options: DecodeOptions = {}): ToonValue {
   // Section: Check for multiple primitives at root in strict mode
   if (opts.strict && nonEmptyLines.length > 1) {
     const allPrimitives = nonEmptyLines.every(
-      line => !line.includes(':') && !line.startsWith('[')
+      (line) => !line.includes(':') && !line.startsWith('[')
     );
     if (allPrimitives) {
       throw new ToonDecodeError(
@@ -214,14 +217,22 @@ export function decode(toon: string, options: DecodeOptions = {}): ToonValue {
   }
 
   const result = parseLines(lines, 0, opts);
-  
+
   // Section: Apply path expansion if enabled
-  if (opts.expandPaths === 'safe' && typeof result.value === 'object' &&
-      result.value !== null && !Array.isArray(result.value)) {
+  if (
+    opts.expandPaths === 'safe' &&
+    typeof result.value === 'object' &&
+    result.value !== null &&
+    !Array.isArray(result.value)
+  ) {
     const metadata = result.keyMetadata || new Map();
-    return expandPaths(result.value as Record<string, ToonValue>, metadata, opts);
+    return expandPaths(
+      result.value as Record<string, ToonValue>,
+      metadata,
+      opts
+    );
   }
-  
+
   return result.value;
 }
 
@@ -346,10 +357,7 @@ function parseInlineArray(
 /**
  * Split string by delimiter, respecting quoted strings
  */
-function splitByDelimiter(
-  str: string,
-  delimiter: ',' | '\t' | '|'
-): string[] {
+function splitByDelimiter(str: string, delimiter: ',' | '\t' | '|'): string[] {
   const values: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -421,9 +429,7 @@ function parseTabular(
   const count = parseInt(countStr, 10);
 
   // Parse keys (split by delimiter, handle quoted keys)
-  const keys = splitByDelimiter(keysStr, delimiter).map((k) =>
-    parseString(k)
-  );
+  const keys = splitByDelimiter(keysStr, delimiter).map((k) => parseString(k));
 
   const result: Record<string, ToonValue>[] = [];
   let lineIndex = startIndex + 1;
@@ -606,7 +612,13 @@ function parseRootArray(
       const content = nextLine.trim();
 
       if (content.startsWith('- ') || content === '-') {
-        return parseListFormat(lines, nextLineIndex, count, baseIndent, options);
+        return parseListFormat(
+          lines,
+          nextLineIndex,
+          count,
+          baseIndent,
+          options
+        );
       }
     }
 
@@ -661,7 +673,7 @@ function parseListFormat(
 
   while (result.length < count && lineIndex < lines.length) {
     const line = lines[lineIndex];
-    
+
     // Check for blank lines
     if (line.trim() === '') {
       // In strict mode, blank lines inside arrays are not allowed
@@ -700,7 +712,7 @@ function parseListFormat(
       // Section: Handle object with first field on hyphen line
       if (itemContent.includes(':')) {
         const obj: Record<string, ToonValue> = {};
-        
+
         // Section: Check if first field is an inline array
         if (itemContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*\S+/)) {
           const parsed = parseInlineArray(itemContent, lineIndex);
@@ -708,7 +720,9 @@ function parseListFormat(
           lineIndex++;
         }
         // Section: Check if first field is tabular array
-        else if (itemContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]\{[^}]+\}:\s*$/)) {
+        else if (
+          itemContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]\{[^}]+\}:\s*$/)
+        ) {
           const keyResult = parseKey(itemContent);
           if (keyResult) {
             // Create temporary lines array for nested parsing
@@ -737,7 +751,7 @@ function parseListFormat(
           if (keyResult) {
             const { key, rest } = keyResult;
             const colonMatch = rest.match(/^:\s*(.*)$/);
-            
+
             if (colonMatch) {
               const valueStr = colonMatch[1].trim();
 
@@ -772,7 +786,7 @@ function parseListFormat(
           if (nextIndent <= baseIndent) break;
 
           const nextContent = nextLine.trim();
-          
+
           // Section: Check if field is inline array
           if (nextContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*\S+/)) {
             const parsed = parseInlineArray(nextContent, lineIndex);
@@ -780,12 +794,19 @@ function parseListFormat(
             lineIndex++;
             continue;
           }
-          
+
           // Section: Check if field is tabular array
-          if (nextContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]\{[^}]+\}:\s*$/)) {
+          if (
+            nextContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]\{[^}]+\}:\s*$/)
+          ) {
             const keyResult = parseKey(nextContent);
             if (keyResult) {
-              const parsed = parseTabular(nextContent, lines, lineIndex, options);
+              const parsed = parseTabular(
+                nextContent,
+                lines,
+                lineIndex,
+                options
+              );
               obj[keyResult.key] = parsed.value;
               lineIndex += parsed.linesConsumed;
             } else {
@@ -793,7 +814,7 @@ function parseListFormat(
             }
             continue;
           }
-          
+
           // Section: Check if field is multiline array
           if (nextContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*$/)) {
             const keyResult = parseKey(nextContent);
@@ -1070,7 +1091,7 @@ function parseLines(
         lineIndex + 1
       );
     }
-    
+
     lineIndex++;
   }
 

@@ -10,7 +10,9 @@ describe('TOON Decoder - Official Fixtures', () => {
       for (const test of fixture.tests) {
         it(test.name, () => {
           if ((test as any).shouldError) {
-            expect(() => decode(test.input as string, test.options as any)).toThrow();
+            expect(() =>
+              decode(test.input as string, test.options as any)
+            ).toThrow();
           } else {
             const result = decode(test.input as string, test.options as any);
             expect(result).toEqual(test.expected);

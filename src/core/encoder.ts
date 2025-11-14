@@ -9,7 +9,7 @@ export function encode(value: ToonValue, options: EncodeOptions = {}): string {
   const indent =
     typeof options.indent === 'number'
       ? ' '.repeat(options.indent)
-      : options.indent ?? '  ';
+      : (options.indent ?? '  ');
   const delimiter = options.delimiter ?? ',';
   const keyFolding = options.keyFolding ?? false;
   const flattenDepth =
@@ -186,9 +186,7 @@ function encodeRootArray(
       const keys = Object.keys(objs[0]);
       const keyDelim = delimiter === ',' ? ',' : delimiter;
       const keyStr = keys.map((k) => quoteKey(k)).join(keyDelim);
-      const lines: string[] = [
-        `[${arr.length}${delimInBracket}]{${keyStr}}:`,
-      ];
+      const lines: string[] = [`[${arr.length}${delimInBracket}]{${keyStr}}:`];
 
       for (const obj of objs) {
         const values = keys.map((k) =>
@@ -365,13 +363,13 @@ function encodeListItem(
         const fieldParts = fieldLines.split('\n');
         const firstLine = fieldParts[0].trimStart();
         lines.push(`${prefix}${firstLine}`);
-        
+
         // Add continuation lines with reduced indentation
         for (let i = 1; i < fieldParts.length; i++) {
           // Remove one level of indentation from continuation lines
           const line = fieldParts[i];
-          const dedented = line.startsWith(indent) 
-            ? line.slice(indent.length) 
+          const dedented = line.startsWith(indent)
+            ? line.slice(indent.length)
             : line;
           lines.push(dedented);
         }

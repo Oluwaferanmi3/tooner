@@ -39,9 +39,7 @@ export function needsQuoting(
   // Safe string pattern: letters, numbers, underscore, spaces, unicode
   // When delimiter is not comma, commas are also safe
   const safePattern =
-    delimiter === ','
-      ? /^[\w\s\u0080-\uFFFF]+$/
-      : /^[\w\s,\u0080-\uFFFF]+$/;
+    delimiter === ',' ? /^[\w\s\u0080-\uFFFF]+$/ : /^[\w\s,\u0080-\uFFFF]+$/;
 
   return !safePattern.test(str);
 }
@@ -119,7 +117,7 @@ export function escapeString(str: string): string {
 export function unescapeString(str: string, lineIndex?: number): string {
   let result = '';
   let i = 0;
-  
+
   while (i < str.length) {
     if (str[i] === '\\' && i + 1 < str.length) {
       const next = str[i + 1];
@@ -156,7 +154,7 @@ export function unescapeString(str: string, lineIndex?: number): string {
       i++;
     }
   }
-  
+
   return result;
 }
 
