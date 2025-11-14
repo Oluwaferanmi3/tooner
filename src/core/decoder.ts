@@ -25,7 +25,8 @@ function validateIndentation(lines: string[], indent: number): void {
     const indentLevel = leadingWhitespace.length;
     if (indentLevel > 0 && indentLevel % indent !== 0) {
       throw new ToonDecodeError(
-        `Invalid indentation: expected multiple of ${indent}, got ${indentLevel}`,
+        `Invalid indentation: expected multiple of ${indent}, ` +
+          `got ${indentLevel}`,
         i + 1
       );
     }
@@ -109,7 +110,8 @@ function setNestedValue(
       if (existingType !== newType) {
         if (options.strict) {
           throw new ToonDecodeError(
-            `Path expansion conflict: cannot merge ${newType} with ${existingType}`,
+            `Path expansion conflict: cannot merge ${newType} ` +
+              `with ${existingType}`,
             0
           );
         }
@@ -469,7 +471,8 @@ function parseTabular(
   // Section: Validate final count
   if (result.length !== count) {
     throw new ToonDecodeError(
-      `Tabular array length mismatch: expected ${count} rows, got ${result.length}`,
+      `Tabular array length mismatch: expected ${count} rows, ` +
+        `got ${result.length}`,
       startIndex
     );
   }

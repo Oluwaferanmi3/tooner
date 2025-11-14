@@ -112,7 +112,7 @@ function containsOnlyPrimitives(obj: Record<string, unknown>): boolean {
 /**
  * Try to fold a key path (for key folding feature)
  * Returns [foldedKey, finalValue] or null if can't fold
- * flattenDepth represents max number of segments in output (e.g., a.b = 2 segments)
+ * flattenDepth represents max segments in output (e.g., a.b = 2)
  */
 function tryFoldPath(
   key: string,
@@ -228,7 +228,10 @@ function encodeInlineArray(
   }
 
   const items = arr.map((item) => encodePrimitive(item, true, delimiter));
-  return `${indentStr}${quotedKey}[${arr.length}${delimInBracket}]: ${items.join(delimiter)}`;
+  return (
+    `${indentStr}${quotedKey}[${arr.length}${delimInBracket}]: ` +
+    `${items.join(delimiter)}`
+  );
 }
 
 /**
@@ -321,7 +324,10 @@ function encodeListItem(
     // Primitive array - inline
     if (isPrimitiveArray(item)) {
       const items = item.map((i) => encodePrimitive(i, true, delimiter));
-      return `${prefix}[${item.length}${delimInBracket}]: ${items.join(delimiter)}`;
+      return (
+        `${prefix}[${item.length}${delimInBracket}]: ` +
+        `${items.join(delimiter)}`
+      );
     }
 
     // Nested arrays or mixed - continue list format
@@ -434,7 +440,10 @@ function encodeObjectField(
     typeof val === 'number' ||
     typeof val === 'string'
   ) {
-    return `${indentStr}${quoteKey(key)}: ${encodePrimitive(val, false, delimiter)}`;
+    return (
+      `${indentStr}${quoteKey(key)}: ` +
+      `${encodePrimitive(val, false, delimiter)}`
+    );
   }
 
   // Section: Array
