@@ -1,0 +1,113 @@
+{
+  "name": "tooner",
+  "version": "0.1.0",
+  "description": "Token-efficient serialization for LLMs - Convert JSON/YAML/TOML to TOON format",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./json": {
+      "import": {
+        "types": "./dist/json.d.ts",
+        "default": "./dist/json.js"
+      },
+      "require": {
+        "types": "./dist/json.d.cts",
+        "default": "./dist/json.cjs"
+      }
+    },
+    "./yaml": {
+      "import": {
+        "types": "./dist/yaml.d.ts",
+        "default": "./dist/yaml.js"
+      },
+      "require": {
+        "types": "./dist/yaml.d.cts",
+        "default": "./dist/yaml.cjs"
+      }
+    },
+    "./toml": {
+      "import": {
+        "types": "./dist/toml.d.ts",
+        "default": "./dist/toml.js"
+      },
+      "require": {
+        "types": "./dist/toml.d.cts",
+        "default": "./dist/toml.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "tooner": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src cli tests --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "keywords": [
+    "toon",
+    "serialization",
+    "json",
+    "yaml",
+    "toml",
+    "llm",
+    "token-efficient",
+    "encoding",
+    "decoding"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mdwekat/tooner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mdwekat/tooner/issues"
+  },
+  "homepage": "https://github.com/mdwekat/tooner#readme",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "prettier": "^3.1.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "commander": "^11.1.0",
+    "yaml": "^2.3.4"
+  }
+}
+
