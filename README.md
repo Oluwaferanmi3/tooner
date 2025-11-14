@@ -1,13 +1,21 @@
 # tooner
 
+[![npm version](https://badge.fury.io/js/tooner.svg)](https://www.npmjs.com/package/tooner)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Token-efficient serialization for LLMs** - Convert JSON/YAML/TOML to TOON format
 
-> ⚠️ **Work in Progress**: This library is under active development. The encoder has basic functionality, but the decoder and many TOON spec features are not yet implemented.
+> ⚠️ **Alpha Release**: This library is under active development. The encoder has basic functionality, but the decoder and many TOON spec features are not yet implemented. Install with `npm install tooner@alpha`
 
 ## Installation
 
 ```bash
-npm install tooner
+# Install alpha version
+npm install tooner@alpha
+
+# Or with other package managers
+pnpm add tooner@alpha
+yarn add tooner@alpha
 ```
 
 ## What is TOON?
