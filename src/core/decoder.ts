@@ -406,7 +406,7 @@ function parseTabular(
   depth: number = 0
 ): ParseResult {
   void depth; // Not used in tabular format (maintains API consistency)
-  
+
   // Parse key first (quoted or unquoted)
   const keyResult = parseKey(header);
   if (!keyResult) {
@@ -872,12 +872,7 @@ function parseListFormat(
           const nextValueStr = nextColonMatch[1].trim();
           if (nextValueStr === '') {
             const nestedStart = lineIndex + 1;
-            const nested = parseLines(
-              lines,
-              nestedStart,
-              options,
-              depth + 1
-            );
+            const nested = parseLines(lines, nestedStart, options, depth + 1);
             obj[nextKey] = nested.value;
             lineIndex = nestedStart + nested.linesConsumed;
           } else {
@@ -1140,12 +1135,7 @@ function parseLines(
       if (valueStr === '') {
         // Nested object or empty object
         const nestedStart = lineIndex + 1;
-        const nested = parseLines(
-          lines,
-          nestedStart,
-          options,
-          depth + 1
-        );
+        const nested = parseLines(lines, nestedStart, options, depth + 1);
         // If nested returned null, it's an empty object
         result[key] = nested.value === null ? {} : nested.value;
         lineIndex = nestedStart + nested.linesConsumed;

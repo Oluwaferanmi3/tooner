@@ -67,10 +67,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run lint && pnpm run typecheck && pnpm run build",
-    "changeset": "changeset",
-    "version": "changeset version",
-    "release": "pnpm run build && changeset publish"
+    "prepublishOnly": "pnpm run lint && pnpm run typecheck && pnpm run build"
   },
   "keywords": [
     "toon",
@@ -95,22 +92,22 @@
   "homepage": "https://github.com/mdwekat/tooner#readme",
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
-    "@types/node": "^20.19.25",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "@vitest/coverage-v8": "^1.6.1",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^9.1.2",
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "@vitest/coverage-v8": "^4.0.10",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.6.2",
     "tsup": "^8.5.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^1.0.0"
+    "vitest": "^4.0.10"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
-    "commander": "^11.1.0",
+    "commander": "^14.0.2",
     "yaml": "^2.8.1"
   }
 }
