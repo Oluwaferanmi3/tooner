@@ -214,7 +214,7 @@ export function decode(toon: string, options: DecodeOptions = {}): ToonValue {
   // Section: Check for root array (starts with [)
   const firstLine = nonEmptyLines[0];
   if (firstLine.trim().startsWith('[')) {
-    const parsed = parseRootArray(firstLine.trim(), lines, 0, opts);
+    const parsed = parseRootArray(firstLine.trim(), lines, 0, opts, 0);
     return parsed.value;
   }
 
@@ -317,7 +317,7 @@ function parseInlineArray(
   const { key, rest } = keyResult;
 
   // Parse bracket notation [count<delim>]:
-  const bracketMatch = rest.match(/^\[([^\]]+)\]:\s*(.*)$/);
+  const bracketMatch = rest.match(/^\[([^\]]+)\]:[ \t]*(.*)$/);
   if (!bracketMatch) {
     throw new ToonDecodeError('Invalid inline array format', lineIndex);
   }
@@ -401,8 +401,11 @@ function parseTabular(
   header: string,
   lines: string[],
   startIndex: number,
-  options: DecodeOptions
+  options: DecodeOptions,
+  depth: number = 0
 ): ParseResult {
+  void depth; // Not used in tabular format (maintains API consistency)
+  
   // Parse key first (quoted or unquoted)
   const keyResult = parseKey(header);
   if (!keyResult) {
@@ -502,10 +505,11 @@ function parseRootArray(
   header: string,
   lines: string[],
   startIndex: number,
-  options: DecodeOptions
+  options: DecodeOptions,
+  depth: number = 0
 ): ParseResult {
   // Section: Handle inline root array [count<delim>]: val,val,val
-  const inlineMatch = header.match(/^\[([^\]]+)\]:\s*(.+)$/);
+  const inlineMatch = header.match(/^\[([^\]]+)\]:[ \t]*(.+)$/);
   if (inlineMatch) {
     const bracketContent = inlineMatch[1];
     const valueStr = inlineMatch[2];
@@ -615,7 +619,8 @@ function parseRootArray(
           nextLineIndex,
           count,
           baseIndent,
-          options
+          options,
+          depth
         );
       }
     }
@@ -664,7 +669,8 @@ function parseListFormat(
   startIndex: number,
   count: number,
   baseIndent: number,
-  options: DecodeOptions
+  options: DecodeOptions,
+  depth: number = 0
 ): ParseResult {
   const result: ToonValue[] = [];
   let lineIndex = startIndex;
@@ -701,7 +707,13 @@ function parseListFormat(
 
       // Section: Handle inline array as list item
       if (itemContent.match(/^\[[^\]]+\]:/)) {
-        const parsed = parseRootArray(itemContent, lines, lineIndex, options);
+        const parsed = parseRootArray(
+          itemContent,
+          lines,
+          lineIndex,
+          options,
+          depth
+        );
         result.push(parsed.value);
         lineIndex += parsed.linesConsumed;
         continue;
@@ -723,7 +735,13 @@ function parseListFormat(
         ) {
           const keyResult = parseKey(itemContent);
           if (keyResult) {
-            const parsed = parseTabular(itemContent, lines, lineIndex, options);
+            const parsed = parseTabular(
+              itemContent,
+              lines,
+              lineIndex,
+              options,
+              depth
+            );
             obj[keyResult.key] = parsed.value;
             lineIndex += parsed.linesConsumed;
           } else {
@@ -734,7 +752,13 @@ function parseListFormat(
         else if (itemContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*$/)) {
           const keyResult = parseKey(itemContent);
           if (keyResult) {
-            const parsed = parseArray(itemContent, lines, lineIndex, options);
+            const parsed = parseArray(
+              itemContent,
+              lines,
+              lineIndex,
+              options,
+              depth
+            );
             obj[keyResult.key] = parsed.value;
             lineIndex += parsed.linesConsumed;
           } else {
@@ -746,7 +770,7 @@ function parseListFormat(
           const keyResult = parseKey(itemContent);
           if (keyResult) {
             const { key, rest } = keyResult;
-            const colonMatch = rest.match(/^:\s*(.*)$/);
+            const colonMatch = rest.match(/^:[ \t]*(.*)$/);
 
             if (colonMatch) {
               const valueStr = colonMatch[1].trim();
@@ -754,7 +778,12 @@ function parseListFormat(
               if (valueStr === '') {
                 // First field has nested value
                 const nestedStart = lineIndex + 1;
-                const nested = parseLines(lines, nestedStart, options);
+                const nested = parseLines(
+                  lines,
+                  nestedStart,
+                  options,
+                  depth + 1
+                );
                 obj[key] = nested.value;
                 lineIndex = nestedStart + nested.linesConsumed;
               } else {
@@ -801,7 +830,8 @@ function parseListFormat(
                 nextContent,
                 lines,
                 lineIndex,
-                options
+                options,
+                depth
               );
               obj[keyResult.key] = parsed.value;
               lineIndex += parsed.linesConsumed;
@@ -815,7 +845,13 @@ function parseListFormat(
           if (nextContent.match(/^("([^"\\]|\\.)*"|\w+)\[[^\]]+\]:\s*$/)) {
             const keyResult = parseKey(nextContent);
             if (keyResult) {
-              const parsed = parseArray(nextContent, lines, lineIndex, options);
+              const parsed = parseArray(
+                nextContent,
+                lines,
+                lineIndex,
+                options,
+                depth
+              );
               obj[keyResult.key] = parsed.value;
               lineIndex += parsed.linesConsumed;
             } else {
@@ -829,13 +865,18 @@ function parseListFormat(
           if (!nextKeyResult) break;
 
           const { key: nextKey, rest: nextRest } = nextKeyResult;
-          const nextColonMatch = nextRest.match(/^:\s*(.*)$/);
+          const nextColonMatch = nextRest.match(/^:[ \t]*(.*)$/);
           if (!nextColonMatch) break;
 
           const nextValueStr = nextColonMatch[1].trim();
           if (nextValueStr === '') {
             const nestedStart = lineIndex + 1;
-            const nested = parseLines(lines, nestedStart, options);
+            const nested = parseLines(
+              lines,
+              nestedStart,
+              options,
+              depth + 1
+            );
             obj[nextKey] = nested.value;
             lineIndex = nestedStart + nested.linesConsumed;
           } else {
@@ -886,11 +927,12 @@ function parseArray(
   header: string,
   lines: string[],
   startIndex: number,
-  options: DecodeOptions
+  options: DecodeOptions,
+  depth: number = 0
 ): ParseResult {
   // Check if tabular format
   if (header.includes('{')) {
-    return parseTabular(header, lines, startIndex, options);
+    return parseTabular(header, lines, startIndex, options, depth);
   }
 
   // Parse key and bracket notation
@@ -921,7 +963,14 @@ function parseArray(
     const content = nextLine.trim();
 
     if (content.startsWith('- ') || content === '-') {
-      return parseListFormat(lines, nextLineIndex, count, baseIndent, options);
+      return parseListFormat(
+        lines,
+        nextLineIndex,
+        count,
+        baseIndent,
+        options,
+        depth
+      );
     }
   }
 
@@ -964,7 +1013,8 @@ function parseArray(
 function parseLines(
   lines: string[],
   startIndex: number,
-  options: DecodeOptions
+  options: DecodeOptions,
+  depth: number = 0
 ): ParseResult {
   let lineIndex = startIndex;
   const result: Record<string, ToonValue> = {};
@@ -1021,7 +1071,7 @@ function parseLines(
 
     // Section: Handle tabular arrays
     if (content.match(/^("([^"\\]|\\.)*"|[\w.-]+)\[[^\]]+\]\{[^}]+\}:\s*$/)) {
-      const parsed = parseTabular(content, lines, lineIndex, options);
+      const parsed = parseTabular(content, lines, lineIndex, options, depth);
       const keyResult = parseKey(content);
       if (keyResult) {
         keyMetadata.set(keyResult.key, keyResult.wasQuoted ?? false);
@@ -1033,7 +1083,7 @@ function parseLines(
 
     // Section: Handle arrays (multiline)
     if (content.match(/^("([^"\\]|\\.)*"|[\w.-]+)\[[^\]]+\]:\s*$/)) {
-      const parsed = parseArray(content, lines, lineIndex, options);
+      const parsed = parseArray(content, lines, lineIndex, options, depth);
       const keyResult = parseKey(content);
       if (keyResult) {
         keyMetadata.set(keyResult.key, keyResult.wasQuoted ?? false);
@@ -1052,7 +1102,7 @@ function parseLines(
       }
 
       const { key, rest } = keyResult;
-      const colonMatch = rest.match(/^:\s*(.*)$/);
+      const colonMatch = rest.match(/^:[ \t]*(.*)$/);
       if (!colonMatch) {
         throw new ToonDecodeError(
           'Missing colon in key-value context',
@@ -1068,7 +1118,12 @@ function parseLines(
       if (valueStr === '') {
         // Nested object or empty object
         const nestedStart = lineIndex + 1;
-        const nested = parseLines(lines, nestedStart, options);
+        const nested = parseLines(
+          lines,
+          nestedStart,
+          options,
+          depth + 1
+        );
         // If nested returned null, it's an empty object
         result[key] = nested.value === null ? {} : nested.value;
         lineIndex = nestedStart + nested.linesConsumed;
@@ -1080,8 +1135,8 @@ function parseLines(
       continue;
     }
 
-    // Standalone value - error in strict nested context
-    if (options.strict && lineIndex > startIndex) {
+    // Standalone value - error in nested context
+    if (depth > 0) {
       throw new ToonDecodeError(
         'Missing colon in key-value context',
         lineIndex + 1
